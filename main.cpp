@@ -2,6 +2,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include "opencv2/imgproc.hpp"
+
 
 
 #include "filter.h"
@@ -13,11 +15,19 @@ using namespace std;
 int main() {
 
     Mat lenna = imread("../Lenna.png");
+    cv::resize(lenna, lenna, Size(1024, 1024));
+
+//    return 0;
+//    auto avg = average(lenna);
+
+    auto laplace = laplacian(lenna, 1);
+//    auto unsharped = unsharp_masking(lenna, Size(5,5), 2);
 
     imshow("Lenna", lenna);
-//    waitKey(0);
-    filter(lenna, 10);
-    imshow("Lenna-Filtered", lenna);
+//    imshow("Lenna-Average", avg);
+    imshow("Lenna-Laplace", laplace);
+
+//    imshow("Lenna-Unsharped", unsharped);
     waitKey(0);
 
 
