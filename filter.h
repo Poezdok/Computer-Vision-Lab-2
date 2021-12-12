@@ -7,7 +7,9 @@
 
 #include "opencv2/core.hpp"
 
+using namespace  cv;
 
+void filter(Mat source, int);
 
 
 #endif //LAB_2_FILTER_H
