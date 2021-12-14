@@ -29,10 +29,9 @@ void filter(Mat source, int mask_size){
 Mat average(Mat source, Size mask_size) {
     Mat mask = Mat::ones(mask_size, CV_8S);
 
-    cout << mask << endl;
+    Mat copied = source.clone();
 
-    Mat copied;
-    source.copyTo(copied);
+
 
     mask_filtration(copied, mask);
     return copied;
@@ -41,38 +40,12 @@ Mat average(Mat source, Size mask_size) {
 
 Mat laplacian(Mat source, double coefficient){
 
-    Mat mask = Mat::zeros(3, 3, CV_8S);
-    int8_t laplace_mask[] = {
-            0, 1, 0,
-            1, -4, 1,
-            0, 1, 0
-    };
-
-    for(auto i = 0; i < 9; i++){
-        mask.at<int8_t>(i) = laplace_mask[i];
-    }
-
-
-    Mat subtract_mask;
-//    source.copyTo(subtract_mask);
-    source.convertTo(subtract_mask, CV_8U);
-    mask_filtration(subtract_mask, mask);
-    imshow("Mask", subtract_mask);
-    waitKey(0);
-    auto result = source + coefficient*subtract_mask;
-
-    return result;
-
 }
 
 
 Mat unsharp_masking(Mat source, Size mask_size, double coefficient){
-    Mat mask = average(source, mask_size);
-    Mat delta = source - mask;
-    Mat result = source + delta*coefficient;
-    return result;
-}
 
+}
 
 
 void mask_filtration(Mat source, Mat mask){
@@ -139,4 +112,35 @@ void add_mask(Mat source, Mat mask) {
     }
 }
 
+double calculate_matched_ness(Mat a, Mat b){
+    uint64_t mismatched = 0;
+    if (a.size().area() != b.size().area()){
 
+        cout << "Images has different sizes!" << endl;
+        return 0;
+    }
+    if(a.channels() != b.channels()){
+
+        cout << "Images has different numbers of channels!" << endl;
+        return 0;
+
+    }
+
+    for (auto i = 0; i < a.size().area(); i++){
+        switch (a.channels()){
+            case 1:
+                if(a.at<uint8_t>(i) != b.at<uint8_t>(i)){
+                    mismatched++;
+                }
+            case 3:
+                if(a.at<Vec3b>(i) != b.at<Vec3b>(i)){
+                    mismatched++;
+                }
+        }
+    }
+
+    double difference = ((double) mismatched) / (double) a.size().area();
+
+    return difference;
+
+}
