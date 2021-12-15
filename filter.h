@@ -5,20 +5,17 @@
 #ifndef LAB_2_FILTER_H
 #define LAB_2_FILTER_H
 
-#include "opencv2/core.hpp"
+#include <opencv2/core.hpp>
 
-using namespace  cv;
 
-void filter(Mat source, int);
+cv::Mat average(const cv::Mat& source, cv::Size mask_size = cv::Size(3, 3));
+cv::Mat laplacian(const cv::Mat& source, double coefficient = 0.05);
 
-Mat average(Mat source, Size mask_size = Size(3, 3));
+cv::Mat box_unsharp(const cv::Mat& source, cv::Size box_size = cv::Size(3, 3), double coefficient = 1);
+cv::Mat gaussian_unsharp(const cv::Mat& source, cv::Size box_size = cv::Size(0, 0), double sigmaX = 5, double coefficient = 1);
+cv::Mat laplace_unsharp(const cv::Mat& source, double coefficient_laplace = 0.05, double coefficient_unsharp = 1);
 
-Mat laplacian(Mat source, double coefficient = 0.05);
-
-Mat box_unsharp(Mat source, Size box_size = Size(3, 3), double coefficient = 1);
-Mat gaussian_unsharp(Mat source, Size box_size = Size(0, 0), double sigmaX = 5, double coefficient = 1);
-Mat laplace_unsharp(Mat source, double coefficient_laplace = 0.05, double coefficient_unsharp = 1);
-double calculate_matched_ness(Mat a, Mat b);
+double calculate_matched_ness(cv::Mat a, cv::Mat b);
 
 
 #endif //LAB_2_FILTER_H

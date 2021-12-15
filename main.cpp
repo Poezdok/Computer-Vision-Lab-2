@@ -19,6 +19,8 @@ int main() {
     Mat lenna = imread("../Lenna.png");
     cv::resize(lenna, lenna, Size(1024, 1024));
 
+    // Average box filtration
+
     tm.start();
     auto avg = average(lenna, Size(3, 3));
     tm.stop();
@@ -46,6 +48,8 @@ int main() {
     waitKey(0);
     destroyAllWindows();
 
+    // Gaussian blur
+
     Mat gaussian;
     GaussianBlur(lenna, gaussian, Size(0,0), 1, 0);
 
@@ -65,6 +69,8 @@ int main() {
     waitKey(0);
     destroyAllWindows();
 
+    // Unsharp mask
+
     auto box_unsharped = box_unsharp(lenna);
     auto gaussian_unsharped = gaussian_unsharp(lenna);
 
@@ -78,9 +84,10 @@ int main() {
 
     imshow("Laplacian", laplace);
 
-
     waitKey(0);
     destroyAllWindows();
+
+    // Laplacian filter and unsharp mask
 
     auto laplace_unsharped = laplace_unsharp(lenna, .06, 1.2);
 
@@ -88,11 +95,8 @@ int main() {
     imshow("Gaussian Unsharped", gaussian_unsharped);
     imshow("Laplace Unsharped", laplace_unsharped);
 
-
     waitKey(0);
     destroyAllWindows();
-
-
 
     return 0;
 }
