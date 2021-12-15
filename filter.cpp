@@ -18,6 +18,8 @@ void add_mask(Mat source, Mat mask);
 
 Mat mask_filtration(Mat source, Mat destination, Mat mask);
 void add_mask(Mat src, Mat dest, Mat mask);
+static void mask_cycle(Mat source, Mat destination, Mat mask);
+
 
 void filter(Mat source, int mask_size){
 
@@ -33,6 +35,14 @@ Mat average(Mat source, Size mask_size) {
     Mat mask = Mat::ones(mask_size, CV_8S);
 
     Mat result = source.clone();
+    mask_cycle(source, result, mask);
+
+    return result;
+
+}
+
+
+void mask_cycle(Mat source, Mat destination, Mat mask){
 
     auto width = source.size().width;
     auto height = source.size().height;
@@ -41,14 +51,13 @@ Mat average(Mat source, Size mask_size) {
         for(int y = 0; y < height - mask.size().height; y++){
             Rect rect(Point2i(x, y), mask.size());
             auto src_roi = source(rect);
-            auto dest_roi = result(rect);
+            auto dest_roi = destination(rect);
             add_mask(src_roi, dest_roi, mask);
         }
     }
 
-    return result;
-
 }
+
 
 void add_mask(Mat source, Mat destination, Mat mask){
 
@@ -56,7 +65,6 @@ void add_mask(Mat source, Mat destination, Mat mask){
     auto center_y = source.size().height / 2;
 
     if(source.channels() == 1){
-
 
 
     } else if (source.channels() == 3){
@@ -81,8 +89,6 @@ void add_mask(Mat source, Mat destination, Mat mask){
 }
 
 
-
-
 Mat laplacian(Mat source, double coefficient){
 
 
@@ -98,32 +104,13 @@ Mat laplacian(Mat source, double coefficient){
         mask.at<int8_t>(i) = mask_array[i];
     }
 
-
-    cout << mask << endl;
-
     Mat laplace = source.clone();
 
-    auto width = source.size().width;
-    auto height = source.size().height;
-
-    for(int x = 0; x < width - mask.size().width; x++){
-        for(int y = 0; y < height - mask.size().height; y++){
-            Rect rect(Point2i(x, y), mask.size());
-            auto src_roi = source(rect);
-            auto dest_roi = laplace(rect);
-            add_mask(src_roi, dest_roi, mask);
-        }
-    }
+    mask_cycle(source, laplace, mask);
 
     Mat result = source - coefficient*laplace;
 
-
     return result;
-
-
-
-
-
 
 }
 
