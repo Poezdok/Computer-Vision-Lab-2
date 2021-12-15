@@ -7,6 +7,8 @@
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include "opencv2/imgproc.hpp"
+
 
 
 using namespace cv;
@@ -14,8 +16,8 @@ using namespace std;
 
 void add_mask(Mat source, Mat mask);
 
-void mask_filtration(Mat source, Mat mask);
-
+Mat mask_filtration(Mat source, Mat destination, Mat mask);
+void add_mask(Mat src, Mat dest, Mat mask);
 
 void filter(Mat source, int mask_size){
 
@@ -27,93 +29,104 @@ void filter(Mat source, int mask_size){
 }
 
 Mat average(Mat source, Size mask_size) {
-    Mat mask = Mat::ones(mask_size, CV_8S);
 
-    Mat copied = source.clone();
+    Mat mask = Mat::ones(mask_size, CV_8U);
 
+    Mat result = source.clone();
 
+    auto width = source.size().width;
+    auto height = source.size().height;
 
-    mask_filtration(copied, mask);
-    return copied;
+    for(int x = 0; x < width - mask.size().width; x++){
+        for(int y = 0; y < height - mask.size().height; y++){
+            Rect rect(Point2i(x, y), mask.size());
+            auto src_roi = source(rect);
+            auto dest_roi = result(rect);
+            add_mask(src_roi, dest_roi, mask);
+        }
+    }
+
+    return result;
 
 }
+
+void add_mask(Mat source, Mat destination, Mat mask){
+
+    auto center_x = source.size().width / 2;
+    auto center_y = source.size().height / 2;
+
+    if(source.channels() == 1){
+
+
+
+    } else if (source.channels() == 3){
+
+
+        vector<int64_t> rgb = {0, 0, 0};
+
+        for (auto i = 0; i < source.size().area(); i++){
+            auto pixel = source.at<Vec3b>(i);
+            auto multiplier = mask.at<uint8_t>(i);
+//            sum += pixel * ((int32_t) multiplier);
+            for (auto j = 0; j < 3; j++){
+                rgb[j] += pixel[j];
+            }
+        }
+
+//        cout << sum << source.at<Vec3b>(center_x, center_y) << endl;
+
+//        Vec3i average = sum / source.size().area();
+
+        Vec3b new_center;
+
+        for(auto i = 0; i < 3; i++){
+            new_center[i] = rgb[i]/source.size().area();
+        }
+
+        destination.at<Vec3b>(center_x, center_y) = new_center;
+
+    }
+
+
+
+}
+
+
+
 
 Mat laplacian(Mat source, double coefficient){
 
 }
 
+Mat box_unsharp(Mat source, Size box_size, double coefficient){
 
-Mat unsharp_masking(Mat source, Size mask_size, double coefficient){
+    auto blurred = average(source, box_size);
+    Mat diff = source - blurred;
+    Mat result = source + coefficient*diff;
 
-}
-
-
-void mask_filtration(Mat source, Mat mask){
-
-    auto width = source.size().width;
-    auto height = source.size().height;
-
-
-
-    for(int x = 0; x < width - mask.size().width; x++){
-        for(int y = 0; y < height - mask.size().height; y++){
-            Rect rect(Point2i(x, y), mask.size());
-            auto roi = source(rect);
-            add_mask(roi, mask);
-
-        }
-    }
-
+    return result;
 
 }
 
 
-void add_mask(Mat source, Mat mask) {
+Mat gaussian_unsharp(Mat source, Size box_size, double sigmaX, double coefficient){
 
-    auto size = source.size();
+    Mat blurred;
+    GaussianBlur(source, blurred, box_size, sigmaX, 0);
 
-    auto center_x = size.width / 2;
-    auto center_y = size.height / 2;
-//    cout << "Source: " << source << endl;
-//    cout << "Mask: " << mask << endl;
-    switch (source.channels()) {
-        case 1: {
-            int64_t sum = 0;
-            for (auto i = 0; i < size.area(); i++) {
-                auto pixel = source.at<int8_t>(i);
-                sum += pixel * mask.at<int8_t>(i);
-            }
-        }
-            break;
-        case 3: {
-            Vec3i sum;
-            for (auto i = 0; i < size.area(); i++) {
-                auto pixel = source.at<Vec3b>(i);
-//                cout << pixel << " ";
-//                for (int j = 0; j < 3; j++) {
-//                    sum[j] += pixel[j] * mask.at<int8_t>(i);
-//                }
+    Mat diff = source - blurred;
+    Mat result = source + coefficient*diff;
 
-                sum += Vec3i(pixel) * mask.at<int8_t>(i);
-//                cout << i << " " <<   sum << " " << int(mask.at<int8_t>(i)) << endl;
-            }
+    return result;
 
-            auto average = sum / size.area();
-//            cout << sum << average << endl;
-//            cout << "Center " << source.at<Vec3b>(center_x, center_y) << endl;
-            source.at<Vec3b>(center_x, center_y) = Vec3b(average);
-
-//            cout << source;
-//            waitKey(0);
-
-
-        }
-            break;
-    }
 }
+
 
 double calculate_matched_ness(Mat a, Mat b){
-    uint64_t mismatched = 0;
+    uint64_t matched = 0;
+    vector<uint64_t> diff = {0, 0, 0};
+    vector<double> match = {0, 0, 0};
+
     if (a.size().area() != b.size().area()){
 
         cout << "Images has different sizes!" << endl;
@@ -129,18 +142,46 @@ double calculate_matched_ness(Mat a, Mat b){
     for (auto i = 0; i < a.size().area(); i++){
         switch (a.channels()){
             case 1:
-                if(a.at<uint8_t>(i) != b.at<uint8_t>(i)){
-                    mismatched++;
+                if(a.at<uint8_t>(i) == b.at<uint8_t>(i)){
+                    matched++;
                 }
+                break;
             case 3:
-                if(a.at<Vec3b>(i) != b.at<Vec3b>(i)){
-                    mismatched++;
+                auto a_pixel = a.at<Vec3b>(i);
+                auto b_pixel = b.at<Vec3b>(i);
+
+                for (auto j = 0; j < 3; j++){
+
+                    diff[j] += abs(a_pixel[j] - b_pixel[j]);
+                    if(a_pixel[j] && b_pixel[j]) {
+                        if (a_pixel[j] >= b_pixel[j]) {
+                            match[j] += (double) b_pixel[j] / (double) a_pixel[j];
+                        } else {
+                            match[j] += (double) a_pixel[j] / (double) b_pixel[j];
+                        }
+                    }
                 }
+
         }
     }
 
-    double difference = ((double) mismatched) / (double) a.size().area();
+    double difference = 0;
+    double matchedness = 0;
 
-    return difference;
+    for(auto i = 0; i < 3; i++){
+
+//        cout << diff[i];
+
+        difference += ((double) diff[i] / 255) / a.size().area();
+//        cout << " " << difference;
+        matchedness += match[i] / a.size().area();
+//        cout << " " << match[i] << " " << matchedness << endl;
+    }
+
+    difference /= 3;
+    matchedness /= 3;
+//    cout << matchedness << endl;
+
+    return matchedness;
 
 }
