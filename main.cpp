@@ -98,5 +98,16 @@ int main() {
     waitKey(0);
     destroyAllWindows();
 
+    imwrite("../Results/Average.png", avg);
+    imwrite("../Results/Blur.png", blurred);
+    imwrite("../Results/Average-Blur-Diff.png", diff);
+    imwrite("../Results/Gaussian.png", gaussian);
+    imwrite("../Results/Gaussian-Blur-Difference.png", gaussian_blur_difference);
+    imwrite("../Results/Gaussian-Blur-Log-Diff.png", log_difference);
+    imwrite("../Results/Laplace-Filter.png", laplace);
+    imwrite("../Results/Box-Unsharp.png", box_unsharped);
+    imwrite("../Results/Gaussian-Unsharp.png", gaussian_unsharped);
+    imwrite("../Results/Laplace-Unsharp.png", laplace_unsharped);
+
     return 0;
 }
