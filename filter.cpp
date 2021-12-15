@@ -30,7 +30,7 @@ void filter(Mat source, int mask_size){
 
 Mat average(Mat source, Size mask_size) {
 
-    Mat mask = Mat::ones(mask_size, CV_8U);
+    Mat mask = Mat::ones(mask_size, CV_8S);
 
     Mat result = source.clone();
 
@@ -66,35 +66,64 @@ void add_mask(Mat source, Mat destination, Mat mask){
 
         for (auto i = 0; i < source.size().area(); i++){
             auto pixel = source.at<Vec3b>(i);
-            auto multiplier = mask.at<uint8_t>(i);
-//            sum += pixel * ((int32_t) multiplier);
+            auto multiplier = mask.at<int8_t>(i);
             for (auto j = 0; j < 3; j++){
-                rgb[j] += pixel[j];
+                rgb[j] += pixel[j] * multiplier;
             }
         }
 
-//        cout << sum << source.at<Vec3b>(center_x, center_y) << endl;
-
-//        Vec3i average = sum / source.size().area();
-
         Vec3b new_center;
-
         for(auto i = 0; i < 3; i++){
             new_center[i] = rgb[i]/source.size().area();
         }
-
         destination.at<Vec3b>(center_x, center_y) = new_center;
-
     }
-
-
-
 }
 
 
 
 
 Mat laplacian(Mat source, double coefficient){
+
+
+    Mat mask = Mat::zeros(Size(3, 3), CV_8S);
+
+    int8_t mask_array[] = {
+            0, 1, 0,
+            1, -4, 1,
+            0, 1, 0
+    };
+
+    for(auto i = 0; i < 9; i++){
+        mask.at<int8_t>(i) = mask_array[i];
+    }
+
+
+    cout << mask << endl;
+
+    Mat laplace = source.clone();
+
+    auto width = source.size().width;
+    auto height = source.size().height;
+
+    for(int x = 0; x < width - mask.size().width; x++){
+        for(int y = 0; y < height - mask.size().height; y++){
+            Rect rect(Point2i(x, y), mask.size());
+            auto src_roi = source(rect);
+            auto dest_roi = laplace(rect);
+            add_mask(src_roi, dest_roi, mask);
+        }
+    }
+
+    Mat result = source - coefficient*laplace;
+
+
+    return result;
+
+
+
+
+
 
 }
 
@@ -116,6 +145,18 @@ Mat gaussian_unsharp(Mat source, Size box_size, double sigmaX, double coefficien
 
     Mat diff = source - blurred;
     Mat result = source + coefficient*diff;
+
+    return result;
+
+}
+
+
+Mat laplace_unsharp(Mat source, double coefficient_laplace, double coefficient_unsharp){
+
+    Mat blurred = laplacian(source, coefficient_laplace);
+
+    Mat diff = source - blurred;
+    Mat result = source + coefficient_unsharp*diff;
 
     return result;
 

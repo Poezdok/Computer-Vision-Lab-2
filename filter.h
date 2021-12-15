@@ -13,11 +13,11 @@ void filter(Mat source, int);
 
 Mat average(Mat source, Size mask_size = Size(3, 3));
 
-Mat laplacian(Mat source, double coefficient = 0.1);
+Mat laplacian(Mat source, double coefficient = 0.05);
 
 Mat box_unsharp(Mat source, Size box_size = Size(3, 3), double coefficient = 1);
 Mat gaussian_unsharp(Mat source, Size box_size = Size(0, 0), double sigmaX = 5, double coefficient = 1);
-
+Mat laplace_unsharp(Mat source, double coefficient_laplace = 0.05, double coefficient_unsharp = 1);
 double calculate_matched_ness(Mat a, Mat b);
 
 
